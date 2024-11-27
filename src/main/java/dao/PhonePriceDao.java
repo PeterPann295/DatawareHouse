@@ -1,5 +1,6 @@
 package dao;
 
+import database.DBConnection;
 import entity.LogFile;
 
 import java.sql.*;
@@ -10,9 +11,20 @@ import java.util.List;
 public class PhonePriceDao {
 
 
-    public static LogFile insertFileLog(int idConfig, String date, String status) {
-        return null;
+    public static void insertFileLog(Connection connection, int idConfig, String date, String status) {
+        String procedureCall = "{CALL InsertLogFile(?,?,?)}"; // Cập nhật câu gọi Procedure với OUT parameter
+        try (CallableStatement callableStatement = connection.prepareCall(procedureCall)) {
+            // Đặt tham số đầu vào (IN)
+            callableStatement.setInt(1, idConfig);
+            callableStatement.setString(2, date);
+            callableStatement.setString(3, status);
+            callableStatement.execute();
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi khi gọi Procedure InsertLogFile: " + e.getMessage(), e);
+        }
     }
+
     public static void updateStatus(Connection connection, int id, String status) {
         try (CallableStatement callableStatement = connection.prepareCall("{CALL UpdateStatus(?,?)}")) {
             callableStatement.setInt(1, id);
@@ -103,5 +115,11 @@ public class PhonePriceDao {
             throw new RuntimeException(e);
         }
         return count;
+    }
+
+    public static void main(String[] args) {
+        DBConnection dbConnection = new DBConnection();
+        Connection connection = dbConnection.getConnection();
+        PhonePriceDao.insertFileLog(connection, 1, "2024-11-28", "PENDING");
     }
 }

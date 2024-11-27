@@ -1,8 +1,11 @@
 package stage;
 
+import controller.Controller;
+import dao.LogFileDao;
 import dao.PhonePriceDao;
 import database.DBConnection;
 import entity.LogFile;
+import util.ArgumentValidator;
 
 import java.sql.Connection;
 import java.text.ParseException;
@@ -11,9 +14,11 @@ import java.util.Date;
 
 public class GetData {
     public static void main(String[] args) throws ParseException {
-        if (args.length < 2) {
-            System.out.println("Vui lòng truyền id_config và date dưới dạng tham số!");
-            System.out.println("Cú pháp: java -jar GetData.jar <id_config_file> <date>");
+
+        //1. Kiem tra Input
+        if(!ArgumentValidator.validateArgs(args)){
+            // 2.1 Yeu Cau Nguoi Dung Chay Lai Jar
+            System.out.println("Tham số không hợp lệ vui lòng truyền lại");
             return;
         }
         int idConfigFile = Integer.parseInt(args[0]);
@@ -26,14 +31,15 @@ public class GetData {
 
         DBConnection db = new DBConnection();
         PhonePriceDao dao = new PhonePriceDao();
-
+        Controller controller = new Controller();
+        //3.Kết nối DB Control
         try(Connection connection = db.getConnection()) {
 
             int countProcessing = dao.getProcessingCount(connection);
-            // Kiem Tra Co Process Dang Duoc Thuc Thi
+            //4. Kiem Tra Co Process Dang Duoc Thuc Thi
             if (countProcessing > 0) {
                 int maxWait = 0;
-                // Cho Doi 3 Phut
+                //4.1 Cho Doi 3 Phut
                 while (dao.getProcessingCount(connection) != 0 && maxWait <= 3) {
                     System.out.println("Wait...");
                     maxWait++;
@@ -41,17 +47,21 @@ public class GetData {
                 }
             }
 
-            LogFile fileLog = dao.getFileLog(idConfigFile, date);
+            LogFile fileLog = LogFileDao.getLogFile(connection ,idConfigFile, date);
+            //5. Kiem Tra LogFile Da Duoc Tao Hay Chua
             if (fileLog == null) {
-                dao.insertFileLog(1, "", "");
-                dao.insertLog(connection, idConfigFile, "", "");
+                //5.1 Tạo log_file xét trạng thái : Pending
+               dao.insertFileLog(connection,1, dateString, "PENDING");
+               fileLog = LogFileDao.getLogFile(connection ,idConfigFile, date);
+               // 5.2 Ghi log đã tạo log file ngày : date (input)
+               dao.insertLog(connection, fileLog.getId(), "PENDING", "created File Log at" + dateString );
             }
+            // 6. Kiểm tra status log_file phải Pending?
             if(fileLog.getStatus().equalsIgnoreCase("pending")){
-                dao.insertLog(connection, idConfigFile, "", "Tien hanh lay du lieu");
-
+                controller.getData(connection, fileLog);
             }else{
-                dao.insertLog(connection, idConfigFile, "", "Lay du lieu khong thanh cong");
-
+                //6.1 Ghi log, log_file đã được lấy dữ liệu từ trước
+                dao.insertLog(connection, fileLog.getId(), "", "Lay du lieu khong thanh cong");
             }
 
 
