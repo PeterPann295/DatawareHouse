@@ -2,7 +2,7 @@ package stage;
 
 import dao.PhonePriceDao;
 import database.DBConnection;
-import entity.FileLog;
+import entity.LogFile;
 
 import java.sql.Connection;
 import java.text.ParseException;
@@ -41,13 +41,18 @@ public class GetData {
                 }
             }
 
-            FileLog fileLog = dao.getFileLog(idConfigFile, date);
+            LogFile fileLog = dao.getFileLog(idConfigFile, date);
             if (fileLog == null) {
-                
+                dao.insertFileLog(1, "", "");
+                dao.insertLog(connection, idConfigFile, "", "");
             }
+            if(fileLog.getStatus().equalsIgnoreCase("pending")){
+                dao.insertLog(connection, idConfigFile, "", "Tien hanh lay du lieu");
 
+            }else{
+                dao.insertLog(connection, idConfigFile, "", "Lay du lieu khong thanh cong");
 
-
+            }
 
 
         }catch (Exception e) {

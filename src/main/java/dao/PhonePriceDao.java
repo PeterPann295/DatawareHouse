@@ -1,6 +1,6 @@
 package dao;
 
-import entity.FileLog;
+import entity.LogFile;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -9,11 +9,9 @@ import java.util.List;
 
 public class PhonePriceDao {
 
-    public static FileLog getFileLog(int configFileId, Date date) {
-        return null;
-    }
-    public static void insertFileLog(FileLog fileLog) {
 
+    public static LogFile insertFileLog(int idConfig, String date, String status) {
+        return null;
     }
     public static void updateStatus(Connection connection, int id, String status) {
         try (CallableStatement callableStatement = connection.prepareCall("{CALL UpdateStatus(?,?)}")) {
