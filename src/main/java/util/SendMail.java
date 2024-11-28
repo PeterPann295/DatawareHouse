@@ -14,7 +14,7 @@ import java.io.InputStream;
 import java.util.Properties;
 
 public class SendMail {
-    private static final String FILE_CONFIG = "\\config.properties";
+    private static final String FILE_CONFIG = "\\src\\main\\resources\\application.properties";
     private static String email;
     private static String password;
 

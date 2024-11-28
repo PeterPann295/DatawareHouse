@@ -79,4 +79,17 @@ public class ConfigFile {
     public void setUpdateAt(Date updateAt) {
         this.updateAt = updateAt;
     }
+
+    @Override
+    public String toString() {
+        return "ConfigFile{" +
+                "id=" + id +
+                ", author='" + author + '\'' +
+                ", email='" + email + '\'' +
+                ", source='" + source + '\'' +
+                ", directoryFile='" + directoryFile + '\'' +
+                ", createAt=" + createAt +
+                ", updateAt=" + updateAt +
+                '}';
+    }
 }
