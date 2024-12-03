@@ -1,5 +1,6 @@
 package dao;
 
+import database.DBConnection;
 import entity.LogFile;
 
 import java.sql.Connection;
@@ -11,13 +12,13 @@ import java.util.Date;
 public class LogFileDao {
 
 
-        public static LogFile getLogFile(Connection conn, int configFileId, Date date) {
+        public static LogFile getLogFile(Connection conn, int configFileId, String date) {
             String query = "SELECT * FROM log_files WHERE id_config = ? AND DATE(created_at) = ?";
             LogFile logFile = null;
 
             try (PreparedStatement pstmt = conn.prepareStatement(query)) {
                 pstmt.setInt(1, configFileId);
-                pstmt.setDate(2, new java.sql.Date(date.getTime())); // Chuyển từ java.util.Date sang java.sql.Date
+                pstmt.setString(2, date); // Chuyển từ java.util.Date sang java.sql.Date
 
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) {
@@ -62,6 +63,12 @@ public class LogFileDao {
             e.printStackTrace();
         }
         return logFile;
+    }
+
+    public static void main(String[] args) {
+        DBConnection connection = new DBConnection();
+        Connection con = connection.getConnection();
+        System.out.println(getLogFile(con, 1, "2024-11-27").toString());
     }
     }
 

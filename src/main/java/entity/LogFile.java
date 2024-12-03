@@ -92,4 +92,18 @@ public class LogFile {
     public void setUpdateAt(Date updateAt) {
         this.updateAt = updateAt;
     }
+
+    @Override
+    public String toString() {
+        return "LogFile{" +
+                "id=" + id +
+                ", configFile=" + configFile.getId() +
+                ", fileName='" + fileName + '\'' +
+                ", detailFilePath='" + detailFilePath + '\'' +
+                ", isProcessing=" + isProcessing +
+                ", status='" + status + '\'' +
+                ", createAt=" + createAt +
+                ", updateAt=" + updateAt +
+                '}';
+    }
 }
