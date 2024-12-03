@@ -14,12 +14,6 @@ import java.util.Date;
 
 public class TranformData {
     public static void main(String[] args) throws ParseException {
-    //1. Kiem tra Input
-        if(!ArgumentValidator.validateArgs(args)){
-        // 2.1 Yeu Cau Nguoi Dung Chay Lai Jar
-        System.out.println("Tham số không hợp lệ vui lòng truyền lại");
-        return;
-    }
     int idConfigFile = Integer.parseInt(args[0]);
     String dateString = args[1];
     SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
