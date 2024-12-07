@@ -1,5 +1,6 @@
 package dao;
 
+import database.DBConnection;
 import entity.ConfigFile;
 
 import java.sql.Connection;
@@ -33,18 +34,25 @@ public class ConfigFileDao {
             pstmt.setInt(1, id);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
+                    configFile = new ConfigFile();
                     configFile.setSource(rs.getString("source"));
                     configFile.setId(id);
                     configFile.setDirectoryFile(rs.getString("directory_file"));
                     configFile.setAuthor(rs.getString("author"));
                     configFile.setEmail(rs.getString("email"));
-                    configFile.setCreateAt(rs.getTimestamp("create_at"));
-                    configFile.setUpdateAt(rs.getTimestamp("update_at"));
+                    configFile.setCreateAt(rs.getTimestamp("created_at"));
+                    configFile.setUpdateAt(rs.getTimestamp("updated_at"));
                 }
             }
         }catch (SQLException e) {
             e.printStackTrace();
         }
         return configFile;
+    }
+
+    public static void main(String[] args) {
+        DBConnection dbConnection = new DBConnection();
+        Connection con = dbConnection.getConnection();
+        System.out.println(getConfigFile(con, 1));
     }
 }

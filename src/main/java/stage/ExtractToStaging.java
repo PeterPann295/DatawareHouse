@@ -8,15 +8,15 @@ import entity.LogFile;
 import util.ArgumentValidator;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class GetData {
-    public static void main(String[] args) throws ParseException {
-
+public class ExtractToStaging {
+    public static void main(String[] args) throws ParseException, SQLException, InterruptedException {
         //1. Kiem tra Input
-        if(!ArgumentValidator.validateArgs(args)){
+        if (!ArgumentValidator.validateArgs(args)) {
             // 2.1 Yeu Cau Nguoi Dung Chay Lai Jar
             System.out.println("Tham số không hợp lệ vui lòng truyền lại");
             return;
@@ -33,7 +33,7 @@ public class GetData {
         PhonePriceDao dao = new PhonePriceDao();
         Controller controller = new Controller();
         //3.Kết nối DB Control
-        try(Connection connection = db.getConnection()) {
+        try (Connection connection = db.getConnection()) {
 
             int countProcessing = dao.getProcessingCount(connection);
             //4. Kiem Tra Co Process Dang Duoc Thuc Thi
@@ -47,31 +47,19 @@ public class GetData {
                 }
             }
 
-            LogFile fileLog = LogFileDao.getLogFile(connection ,idConfigFile, dateString);
+            LogFile fileLog = LogFileDao.getLogFile(connection, idConfigFile, dateString);
             //5. Kiem Tra LogFile Da Duoc Tao Hay Chua
             if (fileLog == null) {
-                //5.1 Tạo log_file xét trạng thái : Pending
-               dao.insertFileLog(connection,idConfigFile, dateString, "PENDING");
-               fileLog = LogFileDao.getLogFile(connection ,idConfigFile, dateString);
-               System.out.println("DateString" + dateString);
-               System.out.println(fileLog);
-               // 5.2 Ghi log đã tạo log file ngày : date (input)
-               dao.insertLog(connection, fileLog.getId(), "PENDING", "created File Log at" + dateString );
+                // 5.1 Ghi log Extract dữ liệu file_log thất bại
+                dao.insertLog(connection, fileLog.getId(), "FAILED", "EXTRACT data failed");
             }
-            System.out.println(fileLog.toString());
-            // 6. Kiểm tra status log_file phải Pending?
-            if(fileLog.getStatus().equalsIgnoreCase("PENDING")){
-                System.out.println("Da Vao Day");
-                controller.getData(connection, fileLog);
-            }else{
-                //6.1 Ghi log, log_file đã được lấy dữ liệu từ trước
-                dao.insertLog(connection, fileLog.getId(), "FAILED", "Lay du lieu khong thanh cong");
+            // 6. Kiểm tra status log_file phải CRAWLED?
+            if (fileLog.getStatus().equalsIgnoreCase("CRAWLED")) {
+                controller.extractToStaging(connection, fileLog);
+            } else {
+                // 5.1 Ghi log Extract dữ liệu file_log thất bại
+                dao.insertLog(connection, fileLog.getId(), "FAILED", "EXTRACT data failed");
             }
-
-
-        }catch (Exception e) {
-            throw new RuntimeException(e);
         }
-
     }
 }
