@@ -212,6 +212,7 @@ public class Controller {
             SendMail.sendMail(mail, subject, message);
         }
     }
+
     public static void truncateTable(Connection connection, LogFile logFile) throws SQLException {
         PhonePriceDao dao = new PhonePriceDao();
         try (CallableStatement callableStatement = connection.prepareCall("{CALL truncate_staging_table()}")) {
@@ -229,6 +230,80 @@ public class Controller {
             SendMail.sendMail(mail, subject, message);
         }
     }
+    public void loadToAggregate(Connection con, LogFile logFile) throws SQLException {
+        PhonePriceDao phonePriceDao = new PhonePriceDao();
+
+        // 1. Đánh dấu trạng thái xử lý của log_file là đang xử lý (isProcessing=true)
+        phonePriceDao.updateIsProcessing(con, logFile.getId(), true);
+
+        // 2. Cập nhật trạng thái log_file là "AGGREGATING" để bắt đầu quá trình tổng hợp dữ liệu
+        phonePriceDao.updateStatus(con, logFile.getId(), "AGGREGATING");
+
+        // 3. Ghi log thông báo rằng quá trình tổng hợp dữ liệu đang bắt đầu
+        phonePriceDao.insertLog(con, logFile.getId(), "AGGREGATING", "Start aggregating data from warehouse to aggregate table");
+
+        // 4. Truncate bảng aggregate để làm sạch dữ liệu trước khi tổng hợp
+//	    truncateAggregateTable(con, logFile);
+
+        // 5. Thực thi stored procedure `load_to_aggregate` để tổng hợp dữ liệu từ `warehouse.phone_price_fact` vào `warehouse.phone_price_aggregate`
+        try (CallableStatement callableStatement = con.prepareCall("{CALL load_to_aggregate()}")) {
+            callableStatement.execute();
+
+            // 6. Sau khi thực thi thành công, cập nhật trạng thái log_file là "AGGREGATED"
+            phonePriceDao.updateStatus(con, logFile.getId(), "AGGREGATED");
+
+            // 7. Ghi log thông báo rằng quá trình tổng hợp dữ liệu thành công
+            phonePriceDao.insertLog(con, logFile.getId(), "AGGREGATED", "Data aggregated successfully from warehouse to aggregate table");
+
+            // 8. Đánh dấu trạng thái xử lý của log_file là đã hoàn tất (isProcessing=false)
+            phonePriceDao.updateIsProcessing(con, logFile.getId(), false);
+
+            phonePriceDao.setFlagIsZero(con, logFile.getId());
+
+        } catch (SQLException e) {
+            // 9. Nếu có lỗi, cập nhật trạng thái log_file thành "FAILED"
+            phonePriceDao.updateStatus(con, logFile.getId(), "FAILED");
+
+            // 10. Ghi log thông báo lỗi kèm theo thông tin chi tiết
+            phonePriceDao.insertLog(con, logFile.getId(), "FAILED", "Aggregation FAILED with message: " + e.getMessage());
+
+            // 11. Đánh dấu trạng thái xử lý của log_file là đã hoàn tất (isProcessing=false)
+            phonePriceDao.updateIsProcessing(con, logFile.getId(), false);
+
+            // 12. Gửi email thông báo lỗi đến tác giả của log_file
+            String mail = logFile.getConfigFile().getEmail();
+            String subject = "Error: Aggregation Failed";
+            String message = "An error occurred while aggregating data.\n\nDetails:\n" + e.getMessage();
+            SendMail.sendMail(mail, subject, message);
+
+            // 13. In thông báo lỗi ra màn hình (cho mục đích debug)
+            System.out.println("Aggregation failed: " + e.getMessage());
+        }
+    }
+//	  public static void truncateAggregateTable(Connection connection, LogFile logFile) {
+//	        PhonePriceDao dao = new PhonePriceDao(); // DAO to log status and errors
+//	        try (CallableStatement callableStatement = connection.prepareCall("{CALL truncate_aggregate_table()}")) {
+//	            callableStatement.execute(); // Call the stored procedure
+//	            // Log success in the log files
+//	            dao.insertLog(connection, logFile.getId(), "AGGREGATING", "Aggregate table truncated successfully");
+//	            System.out.println("Aggregate table truncated successfully.");
+//	        } catch (SQLException e) {
+//	            // Handle exception and log the error
+//	            e.printStackTrace();
+//	            dao.insertLog(connection, logFile.getId(), "ERROR", "Error truncating aggregate table: " + e.getMessage());
+//
+//	            // Send email notification in case of error
+//	            String mail = logFile.getConfigFile().getEmail();
+//	            DateTimeFormatter dt = DateTimeFormatter.ofPattern("hh:mm:ss dd/MM/yyyy");
+//	            LocalDateTime nowTime = LocalDateTime.now();
+//	            String timeNow = nowTime.format(dt);
+//	            String subject = "Error Date: " + timeNow;
+//	            String message = "Error with message: "+e.getMessage();
+//	            SendMail.sendMail(mail, subject, message);
+//
+//	            System.out.println("Error truncating aggregate table: " + e.getMessage());
+//	        }
+//	    }
 
 public void loadToAggregate(Connection con, LogFile logFile) throws SQLException {
 	    PhonePriceDao phonePriceDao = new PhonePriceDao();

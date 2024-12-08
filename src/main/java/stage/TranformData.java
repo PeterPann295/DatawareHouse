@@ -40,7 +40,7 @@ public class TranformData {
                 Thread.sleep(60000); //60s
             }
         }
-            LogFile fileLog = LogFileDao.getLogFile(connection ,idConfigFile, date);
+            LogFile fileLog = LogFileDao.getLogFile(connection ,idConfigFile, date.toString());
             //5. Kiem Tra LogFile Da Duoc Tao Hay Chua
             if (fileLog == null) {
                 //5.1 ghi file_log tranform thất bại
