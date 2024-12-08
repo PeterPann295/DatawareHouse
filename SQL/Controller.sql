@@ -218,3 +218,42 @@ END $$
 DELIMITER ;
 
 
+DELIMITER $$
+
+CREATE PROCEDURE load_to_aggregate()
+BEGIN
+    INSERT INTO warehouse.phone_price_aggregate (
+        date, 
+        NAME, 
+        trademark, 
+        avg_price, 
+        max_price, 
+        min_price,
+        create_at,
+        updated_at,
+        create_by,
+        update_by
+    )
+    SELECT 
+        d.date,                    
+        p.name,                    
+        p.trademark,               
+        AVG(f.price) AS avg_price, 
+        MAX(f.price) AS max_price, 
+        MIN(f.price) AS min_price,
+        CURRENT_TIMESTAMP AS create_at, 
+        CURRENT_TIMESTAMP AS updated_at, -- Gán giá trị thời gian hiện tại
+        'system' AS create_by,           -- Mặc định người tạo là 'system'
+        'system' AS update_by            -- Mặc định người cập nhật là 'system'
+    FROM 
+        warehouse.phone_price_fact f
+    JOIN 
+        warehouse.phone_dim p ON f.id_phone = p.id_phone
+    JOIN 
+        warehouse.date_dim d ON f.id_date = d.id_date
+    GROUP BY 
+        d.date, p.name, p.trademark;    
+END $$
+
+DELIMITER ;
+

@@ -47,7 +47,9 @@ public class LoadToWarehouse {
             }
 
 
+
             LogFile fileLog = LogFileDao.getLogFile(connection, idConfigFile, dateString);
+
             //5. Kiem Tra LogFile Da Duoc Tao Hay Chua
             if (fileLog == null) {
                 //5.1 ghi log load data thất bại
