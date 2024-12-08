@@ -199,14 +199,12 @@ BEGIN
   
   -- Chèn dữ liệu vào bảng phone_price_fact
   INSERT INTO warehouse.phone_price_fact(
-    id,
     id_phone,
     id_date,
     price,
     source
   )
   SELECT 
-    daily.id, 
     daily._phone, 
     daily._date, 
     CAST(daily.price AS int), 
