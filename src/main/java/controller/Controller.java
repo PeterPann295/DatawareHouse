@@ -127,8 +127,8 @@ public class Controller {
             // Thực hiện stored procedure
             callableStatement.execute();
             //12
-            System.out.println("transform success!");
-            //(13. Cập nhật status của config thành WH_LOADED
+            System.out.println("load success!");
+            //13. Cập nhật status của config thành WH_LOADED
             phonePriceDao.updateStatus(con, logFile.getId(), "WH_LOADED");
             //14. ghi log da load data to wh
             phonePriceDao.insertLog(con, logFile.getId(), "", "Đã load data to wh");
@@ -139,7 +139,7 @@ public class Controller {
             //12.1 xxet trang thai file log là fail
             phonePriceDao.updateStatus(con, logFile.getId(), "FAIlED");
 
-            //12.2 Ghi log tranform thất bại
+            //12.2 Ghi log load thất bại
             phonePriceDao.insertFileLog(con, logFile.getId(), "FAIL", "load to wh data fail");
             //12.3cập nhật trạng thái xử li file_log là đang xu ly = false
             phonePriceDao.updateIsProcessing(con, logFile.getId(), false);

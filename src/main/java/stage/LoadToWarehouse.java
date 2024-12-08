@@ -8,6 +8,7 @@ import entity.LogFile;
 import util.ArgumentValidator;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -25,12 +26,16 @@ public class LoadToWarehouse {
         DBConnection db = new DBConnection();
         PhonePriceDao dao = new PhonePriceDao();
         Controller controller = new Controller();
-        //3.Kết nối DB Control
-        try(
-                Connection connection = db.getConnection()) {
+        //2.Kết nối DB Control
+        try (Connection connection = db.getConnection()) {
+            // 3. Kiểm tra xem kết nối có hợp lệ không
+            if (connection == null || !connection.isValid(5)) { // 5 giây là timeout
+                //3.1 Báo lỗi kết nối không thành công
+                throw new SQLException("DB connect thất bại");
+            }
 
-            int countProcessing = dao.getProcessingCount(connection);
             //4. Kiem Tra Co Process Dang Duoc Thuc Thi
+            int countProcessing = dao.getProcessingCount(connection);
             if (countProcessing > 0) {
                 int maxWait = 0;
                 //4.1 Cho Doi 3 Phut
@@ -40,11 +45,16 @@ public class LoadToWarehouse {
                     Thread.sleep(60000); //60s
                 }
             }
-            LogFile fileLog = LogFileDao.getLogFile(connection ,idConfigFile, date.toString());
+
+
+
+            LogFile fileLog = LogFileDao.getLogFile(connection, idConfigFile, dateString);
+
             //5. Kiem Tra LogFile Da Duoc Tao Hay Chua
             if (fileLog == null) {
-                //5.1 ghi file_log load data thất bại
-                dao.insertFileLog(connection, fileLog.getId(), "FAIL", "load data to wh fail");
+                //5.1 ghi log load data thất bại
+                dao.insertLog(connection, fileLog.getId(), "FAIL", "load data to wh thất bại");
+                throw new RuntimeException("load data thất bại: fileLog is null");
             }
             // 6. Lấy status của file log
             String status = fileLog.getStatus();
@@ -56,11 +66,11 @@ public class LoadToWarehouse {
                 dao.updateStatus(connection, fileLog.getId(), "WH_LOADING");
                 //10. Ghi log bat dau load to wh
                 dao.insertLog(connection, fileLog.getId(), "", "Start load to warehouse");
-                //11. Tiến hành tranform
+                //11. Tiến hành load data
                 controller.loadToWarehouse(connection, fileLog);
             } else {
                 //7.1 ghi log thaast bại nếu không phải extracted
-                dao.insertFileLog(connection, fileLog.getId(), "FAIL", "load data to wh fail");
+                dao.insertLog(connection, fileLog.getId(), "FAIL", "load data to wh thất bại");
             }
             db.closeConnection();
         }catch (Exception e) {
