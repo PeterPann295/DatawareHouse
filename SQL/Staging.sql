@@ -30,9 +30,12 @@ CREATE TABLE phone_price_daily (
 );
 -- 
 -- Tạo procedure tranform data từ bảng origin sang bảng daily
-DROP PROCEDURE if EXISTS transform_phone_data;
+DROP PROCEDURE IF EXISTS transform_phone_data;
+DELIMITER $$
+
 CREATE PROCEDURE transform_phone_data()
 BEGIN
+    -- Chèn dữ liệu từ bảng origin vào bảng daily, xử lý giá trị NULL và cập nhật các cột nếu id trùng
     INSERT INTO phone_price_daily (
         id,
         name,
@@ -46,16 +49,26 @@ BEGIN
     )
     SELECT 
         id,
-        name,
-        CAST(price AS INT),
-        processor,
-        CAST(capacity AS INT),
-        CAST(ram AS INT),
-        CAST(screen_size AS FLOAT),
-        trade_mark,
-        source
-    FROM phone_price_daily_origin;
-END;
+        COALESCE(name, 'Unknown'),                          -- Gắn giá trị mặc định 'Unknown' cho name
+        COALESCE(CAST(price AS INT), 0),                    -- Gắn giá trị mặc định 0 cho price
+        COALESCE(processor, 'Unknown'),                     -- Gắn giá trị mặc định 'Unknown' cho processor
+        COALESCE(CAST(capacity AS INT), 0),                 -- Gắn giá trị mặc định 0 cho capacity
+        COALESCE(CAST(ram AS INT), 0),                      -- Gắn giá trị mặc định 0 cho ram
+        COALESCE(CAST(screen_size AS FLOAT), 0.0),          -- Gắn giá trị mặc định 0.0 cho screen_size
+        COALESCE(trade_mark, 'Unknown'),                    -- Gắn giá trị mặc định 'Unknown' cho trade_mark
+        COALESCE(source, 'Unknown')                         -- Gắn giá trị mặc định 'Unknown' cho source
+    FROM phone_price_daily_origin
+    ON DUPLICATE KEY UPDATE
+        name = VALUES(name),                
+        price = VALUES(price),             
+        processor = VALUES(processor),       
+        capacity = VALUES(capacity),         
+        ram = VALUES(ram),                   
+        screen_size = VALUES(screen_size),   
+        trade_mark = VALUES(trade_mark),  
+        source = VALUES(source);           
+END$$
+DELIMITER ;
 
 -- Tạo procedure TransformDate để tham chiếu khóa chính table date_dim của warehouse vào thuộc tính _date của staging
 DROP PROCEDURE if EXISTS TransformDate;
@@ -76,6 +89,8 @@ BEGIN
     JOIN warehouse.phone_dim AS dim ON phone_price_daily.name = dim.NAME
     SET phone_price_daily._phone = dim.id_phone;
 END;
+
+CALL  transform_phone_data();
 
 
 
