@@ -36,6 +36,8 @@ CREATE TABLE logs (
     CONSTRAINT fk_log_file FOREIGN KEY (id_log_file) REFERENCES log_files(id)
 );
 
+INSERT INTO config_files (`id`, `author`, `email`, `source`, `directory_file`, `created_at`, `updated_at`) VALUES
+	(1, 'Minh Hieu', 'leminhhieu.ltp2021@gmail.com', 'fptshop.com.vn', 'D:\\DataWarehouse\\', '2024-11-27 11:39:34', '2024-11-27 22:51:57');
 
 drop procedure if EXISTS GetLogFiles;
 DELIMITER //
@@ -214,3 +216,5 @@ BEGIN
 END $$
 
 DELIMITER ;
+
+
