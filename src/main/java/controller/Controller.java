@@ -360,6 +360,15 @@ public void loadToAggregate(Connection con, LogFile logFile) throws SQLException
 	        System.out.println("Aggregation failed: " + e.getMessage());
 	    }
 	}
+    public void loadToDataMart(Connection connection, LogFile fileLog) throws SQLException {
+        // Code thực hiện load dữ liệu vào DataMart, có thể là một thủ tục hoặc câu lệnh SQL
+        String procedureCall = "{call LoadDataToDataMart(?)}"; // Đây chỉ là ví dụ, cần phải thay đổi nếu thủ tục khác
+        try (CallableStatement stmt = connection.prepareCall(procedureCall)) {
+            stmt.setInt(1, fileLog.getId());
+            stmt.execute();
+        }
+    }
+
 //	  public static void truncateAggregateTable(Connection connection, LogFile logFile) {
 //	        PhonePriceDao dao = new PhonePriceDao(); // DAO to log status and errors
 //	        try (CallableStatement callableStatement = connection.prepareCall("{CALL truncate_aggregate_table()}")) {

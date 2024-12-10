@@ -116,6 +116,29 @@ public class PhonePriceDao {
         }
         return count;
     }
+    public void updateFileLogStatus(Connection connection, int fileLogId, String status, boolean isProcessing) throws SQLException {
+        String query = "UPDATE file_log SET status = ?, is_processing = ? WHERE id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(query)) {
+            stmt.setString(1, status); // Truyền trạng thái như MLOADED hoặc PENDING
+            stmt.setBoolean(2, isProcessing); // Truyền giá trị boolean cho isProcessing
+            stmt.setInt(3, fileLogId);
+            stmt.executeUpdate();
+        }
+    }
+
+    public String getAuthorEmail(Connection connection, int fileLogId) throws SQLException {
+        String query = "SELECT author_email FROM file_log WHERE id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(query)) {
+            stmt.setInt(1, fileLogId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("author_email");
+            } else {
+                return null; // Không tìm thấy email, trả về null
+            }
+        }
+    }
+
 
     public static void main(String[] args) {
         DBConnection dbConnection = new DBConnection();
