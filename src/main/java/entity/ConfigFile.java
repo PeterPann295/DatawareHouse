@@ -1,5 +1,6 @@
 package entity;
 
+import java.io.ObjectInputFilter;
 import java.util.Date;
 
 public class ConfigFile {
@@ -8,6 +9,7 @@ public class ConfigFile {
     private String email;
     private String source;
     private String directoryFile;
+    private ConfigTable configTable;
     private Date createAt;
     private Date updateAt;
 
@@ -20,6 +22,26 @@ public class ConfigFile {
         this.createAt = createAt;
         this.updateAt = updateAt;
     }
+
+    public ConfigFile(int id, String author, String email, String source, String directoryFile, ConfigTable configTable, Date createAt, Date updateAt) {
+        this.id = id;
+        this.author = author;
+        this.email = email;
+        this.source = source;
+        this.directoryFile = directoryFile;
+        this.configTable = configTable;
+        this.createAt = createAt;
+        this.updateAt = updateAt;
+    }
+
+    public ConfigTable getConfigTable() {
+        return configTable;
+    }
+
+    public void setConfigTable(ConfigTable configTable) {
+        this.configTable = configTable;
+    }
+
     public ConfigFile(){
 
     }
@@ -88,6 +110,7 @@ public class ConfigFile {
                 ", email='" + email + '\'' +
                 ", source='" + source + '\'' +
                 ", directoryFile='" + directoryFile + '\'' +
+                ", configTable=" + configTable +
                 ", createAt=" + createAt +
                 ", updateAt=" + updateAt +
                 '}';

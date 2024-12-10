@@ -2,16 +2,31 @@ DROP DATABASE IF EXISTS controller;
 CREATE DATABASE controller character set utf8;
 USE controller;
 
+DROP TABLE IF EXISTS config_table;
+CREATE TABLE config_tables(
+                              id INT PRIMARY KEY AUTO_INCREMENT,
+                              name_tb_staging_origin VARCHAR(250),
+                              name_tb_staging_transformed VARCHAR(250),
+                              name_tb_warehouse_phone_dim VARCHAR(250),
+                              name_tb_warehouse_date_dim VARCHAR(250),
+                              name_tb_warehouse_phone_fact VARCHAR(250),
+                              name_tb_warehouse_aggregate VARCHAR(250),
+                              name_tb_mart VARCHAR(250)
+);
+INSERT INTO config_tables VALUES(1, 'phone_price_daily_origin', 'phone_price_daily', 'phone_dim','date_dim', 'phone_price_fact', 'phone_price_aggregate', 'mart_phone_price');
 DROP TABLE IF EXISTS config_files;
 CREATE TABLE config_files (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    author VARCHAR(255) DEFAULT NULL,
-    email VARCHAR(255) DEFAULT NULL,
-    source VARCHAR(255) NOT NULL,
-    directory_file VARCHAR(510) DEFAULT 'D:\\',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                              id INT PRIMARY KEY AUTO_INCREMENT,
+                              author VARCHAR(255) DEFAULT NULL,
+                              email VARCHAR(255) DEFAULT NULL,
+                              source VARCHAR(255) NOT NULL,
+                              directory_file VARCHAR(510) DEFAULT 'D:\\',
+                              id_config_table INT,
+                              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                              CONSTRAINT fk_config_table FOREIGN KEY (id_config_table) REFERENCES config_tables(id)
 );
+
 
 DROP TABLE IF EXISTS log_files;
 CREATE TABLE log_files (

@@ -29,6 +29,7 @@ public class ConfigFileDao {
     }
     public static ConfigFile getConfigFile(Connection con, int id) {
         String query = "SELECT * FROM config_files WHERE id = ?";
+
         ConfigFile configFile = null;
         try(PreparedStatement pstmt = con.prepareStatement(query)) {
             pstmt.setInt(1, id);
@@ -39,6 +40,7 @@ public class ConfigFileDao {
                     configFile.setId(id);
                     configFile.setDirectoryFile(rs.getString("directory_file"));
                     configFile.setAuthor(rs.getString("author"));
+                    configFile.setConfigTable(ConfigTableDao.getConfigTable(con, rs.getInt("id_config_table")));
                     configFile.setEmail(rs.getString("email"));
                     configFile.setCreateAt(rs.getTimestamp("created_at"));
                     configFile.setUpdateAt(rs.getTimestamp("updated_at"));
