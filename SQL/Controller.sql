@@ -51,6 +51,8 @@ CREATE TABLE logs (
     CONSTRAINT fk_log_file FOREIGN KEY (id_log_file) REFERENCES log_files(id)
 );
 
+INSERT INTO config_files (`id`, `author`, `email`, `source`, `directory_file`, `created_at`, `updated_at`) VALUES
+	(1, 'Minh Hieu', 'leminhhieu.ltp2021@gmail.com', 'fptshop.com.vn', 'D:\\DataWarehouse\\', '2024-11-27 11:39:34', '2024-11-27 22:51:57');
 
 drop procedure if EXISTS GetLogFiles;
 DELIMITER //
@@ -229,3 +231,44 @@ BEGIN
 END $$
 
 DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE PROCEDURE load_to_aggregate()
+BEGIN
+    INSERT INTO warehouse.phone_price_aggregate (
+        date, 
+        NAME, 
+        trademark, 
+        avg_price, 
+        max_price, 
+        min_price,
+        create_at,
+        updated_at,
+        create_by,
+        update_by
+    )
+    SELECT 
+        d.date,                    
+        p.name,                    
+        p.trademark,               
+        AVG(f.price) AS avg_price, 
+        MAX(f.price) AS max_price, 
+        MIN(f.price) AS min_price,
+        CURRENT_TIMESTAMP AS create_at, 
+        CURRENT_TIMESTAMP AS updated_at, -- Gán giá trị thời gian hiện tại
+        'system' AS create_by,           -- Mặc định người tạo là 'system'
+        'system' AS update_by            -- Mặc định người cập nhật là 'system'
+    FROM 
+        warehouse.phone_price_fact f
+    JOIN 
+        warehouse.phone_dim p ON f.id_phone = p.id_phone
+    JOIN 
+        warehouse.date_dim d ON f.id_date = d.id_date
+    GROUP BY 
+        d.date, p.name, p.trademark;    
+END $$
+
+DELIMITER ;
+

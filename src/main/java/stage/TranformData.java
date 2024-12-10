@@ -8,43 +8,51 @@ import entity.LogFile;
 import util.ArgumentValidator;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class TranformData {
     public static void main(String[] args) throws ParseException {
-    int idConfigFile = Integer.parseInt(args[0]);
-    String dateString = args[1];
-    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    Date date = dateFormat.parse(dateString);
+        int idConfigFile = Integer.parseInt(args[0]);
+        String dateString = args[1];
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Date date = dateFormat.parse(dateString);
 
         System.out.println("id_config: " + idConfigFile);
         System.out.println("date: " + date);
 
-    DBConnection db = new DBConnection();
-    PhonePriceDao dao = new PhonePriceDao();
-    Controller controller = new Controller();
-    //3.Kết nối DB Control
-        try(
-    Connection connection = db.getConnection()) {
-
-        int countProcessing = dao.getProcessingCount(connection);
-        //4. Kiem Tra Co Process Dang Duoc Thuc Thi
-        if (countProcessing > 0) {
-            int maxWait = 0;
-            //4.1 Cho Doi 3 Phut
-            while (dao.getProcessingCount(connection) != 0 && maxWait <= 3) {
-                System.out.println("Wait...");
-                maxWait++;
-                Thread.sleep(60000); //60s
+        DBConnection db = new DBConnection();
+        PhonePriceDao dao = new PhonePriceDao();
+        Controller controller = new Controller();
+        //2.Kết nối DB Control
+        try (Connection connection = db.getConnection()) {
+            // 3. Kiểm tra xem kết nối có hợp lệ không
+            if (connection == null || !connection.isValid(5)) { // 5 giây là timeout
+                //3.1 Báo lỗi kết nối không thành công
+                throw new SQLException("DB connect thất bại");
             }
-        }
-            LogFile fileLog = LogFileDao.getLogFile(connection ,idConfigFile, date.toString());
+
+            //4. Kiem Tra Co Process Dang Duoc Thuc Thi
+            int countProcessing = dao.getProcessingCount(connection);
+            if (countProcessing > 0) {
+                int maxWait = 0;
+                //4.1 Cho Doi 3 Phut
+                while (dao.getProcessingCount(connection) != 0 && maxWait <= 3) {
+                    System.out.println("Wait...");
+                    maxWait++;
+                    Thread.sleep(60000); //60s
+                }
+            }
+
+            LogFile fileLog = LogFileDao.getLogFile(connection, idConfigFile, dateString);
+
             //5. Kiem Tra LogFile Da Duoc Tao Hay Chua
             if (fileLog == null) {
-                //5.1 ghi file_log tranform thất bại
-                dao.insertFileLog(connection, fileLog.getId(), "FAIL", "Tranform data fail");
+                //5.1 ghi log tranform thất bại
+                dao.insertLog(connection, fileLog.getId(), "FAIL", "Transform data thất bại");
+                throw new RuntimeException("Transform data thất bại: fileLog is null");
             }
             // 6. Lấy status của file log
             String status = fileLog.getStatus();
@@ -58,7 +66,7 @@ public class TranformData {
                 controller.transfromData(connection, fileLog);
             } else {
                 //7.1 ghi log thaast bại nếu không phải extracted
-                dao.insertFileLog(connection, fileLog.getId(), "FAIL", "Tranform data fail");
+                dao.insertLog(connection, fileLog.getId(), "FAIL", "Tranform data thất bại");
             }
         db.closeConnection();
         }catch (Exception e) {
