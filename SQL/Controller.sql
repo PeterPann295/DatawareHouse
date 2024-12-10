@@ -136,9 +136,6 @@ END
 DELIMITER ;
 
 
-
-
-
 drop procedure if EXISTS InsertLog;
 DELIMITER //
 create procedure InsertLog(
@@ -147,9 +144,9 @@ create procedure InsertLog(
 	description varchar(255)
 )
 BEGIN
-	insert into logs(id_config, status, description)
+	insert into logs(id_log_file, status, description)
 	values (id_log_file, status, description);
-END
+END//
 DELIMITER ;
 
 -- Tạo procedure thay đổi status của config có id là input_id và status = input_status
@@ -163,7 +160,7 @@ BEGIN
     UPDATE log_files
     SET status= input_status
     WHERE id = input_id;
-END
+END//
 DELIMITER ;
 
 -- Tạo procedure cập nhật giá trị của is_processing trong config có id là input_id và is_processing = input_is_processing
@@ -213,7 +210,6 @@ CREATE PROCEDURE LoadDataToWH()
 BEGIN
   -- Gọi procedure SetDataExpired để cập nhật giá trị dt_expired
   CALL warehouse.SetDataExpired();
-  
   -- Chèn dữ liệu vào bảng phone_price_fact
   INSERT INTO warehouse.phone_price_fact(
     id_phone,
@@ -271,4 +267,10 @@ BEGIN
 END $$
 
 DELIMITER ;
-
+-- 
+-- CALL LoadDataToWH();
+-- CALL TransformData();
+-- DESCRIBE warehouse.phone_price_fact;
+-- ALTER TABLE warehouse.phone_price_fact AUTO_INCREMENT = 1;
+--
+CALL InsertLog(1,"fail","alo")
