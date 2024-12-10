@@ -68,7 +68,7 @@ public class LogFileDao {
     public static void main(String[] args) {
         DBConnection connection = new DBConnection();
         Connection con = connection.getConnection();
-        System.out.println(getLogFile(con, 1, "2024-11-27").toString());
+//        System.out.println(getLogFile(con, 1, "2024-11-27").toString());
     }
     }
 
