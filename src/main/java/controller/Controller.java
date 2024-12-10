@@ -86,6 +86,69 @@ public class Controller {
             SendMail.sendMail(mail, subject, message);
         }
     }
+    public void extractToStaging(Connection con, LogFile logFile) throws SQLException {
+        PhonePriceDao phonePriceDao = new PhonePriceDao();
+
+        //6.Cập nhật  trạng thái  xử lí log_file là đang xử lý (isProcessing=true)
+        phonePriceDao.updateIsProcessing(con, logFile.getId(), true);
+
+        // 7. Cập nhật status log_file là EXTRACTING
+        phonePriceDao.updateStatus(con, logFile.getId(), "EXTRACTING");
+
+        // 8. Ghi Log đang tiến hành trich xuat du lieu
+        phonePriceDao.insertLog(con, logFile.getId(), "EXTRACTING", "Start EXTRACTING to Staging ");
+
+        // 9. Truncate table staging trong database staging
+        truncateTable(con, logFile);
+        String nameStagingPhonePriceDaily = "staging." + logFile.getConfigFile().getConfigTable().getNameTbStagingOrigin();
+
+        System.out.println("name: " + nameStagingPhonePriceDaily);
+
+        String sqlLoadData = "LOAD DATA INFILE ? \n" +
+                "INTO TABLE " + nameStagingPhonePriceDaily + " \n" + // Đảm bảo nối chuỗi đúng cách
+                "FIELDS TERMINATED BY ',' \n" +
+                "ENCLOSED BY '\"' \n" +
+                "LINES TERMINATED BY '\\n' \n" +
+                "IGNORE 1 ROWS \n" +
+                "(NAME, price, processor, capacity, ram, screen_size, trademark, SOURCE, create_at);";
+        System.out.println("SQL Load Data: " + sqlLoadData);
+        //11. Load Du Lieu Vao Staging
+        try{
+            PreparedStatement psLoadData = con.prepareStatement(sqlLoadData);
+            psLoadData.setString(1, logFile.getDetailFilePath());
+            psLoadData.execute();
+
+            System.out.println(" Da Vao Day");
+
+            //12.
+            phonePriceDao.updateStatus(con, logFile.getId(), "EXTRACTED");
+
+            // 13. Ghi Log đang trich xuat du lieu thanh cong
+            phonePriceDao.insertLog(con, logFile.getId(), "EXTRACTED", "EXTRACT to Staging Success");
+
+            //14.Cập nhật  trạng thái  xử lí log_file là đang xử lý (isProcessing=false)
+            phonePriceDao.updateIsProcessing(con, logFile.getId(), false);
+
+
+        }catch (SQLException e){
+            // 11.1 Xét trạng thái log_file: FAILED
+            phonePriceDao.updateStatus(con, logFile.getId(), "FAILED");
+            // 11.2 Ghi Log: CRAWL dữ liệu thất bại
+            phonePriceDao.insertLog(con, logFile.getId(), "FAILED", "EXTRACT Data FAILED WITH MESSAGE ");
+            // 11.3.Cập nhật  trạng thái  xử lí log_file là đang xử lý (isProcessing=false)
+            phonePriceDao.updateIsProcessing(con, logFile.getId(), false);
+
+            String mail = logFile.getConfigFile().getEmail();
+            DateTimeFormatter dt = DateTimeFormatter.ofPattern("hh:mm:ss dd/MM/yyyy");
+            LocalDateTime nowTime = LocalDateTime.now();
+            String timeNow = nowTime.format(dt);
+            String subject = "Error Date: " + timeNow;
+            String message = "Error with message: "+e.getMessage();
+            // 11.4 Gửi Mail đến Author
+            SendMail.sendMail(mail, subject, message);
+        }
+    }
+
     public void transfromData(Connection con, LogFile logFile){
         PhonePriceDao phonePriceDao = new PhonePriceDao();
         try (CallableStatement callableStatement = con.prepareCall("{CALL TransformData()}")) {
@@ -152,64 +215,6 @@ public class Controller {
             String message = "Error with message: "+e.getMessage();
             SendMail.sendMail(mail, subject, message);
 
-        }
-    }
-    public void extractToStaging(Connection con, LogFile logFile) throws SQLException {
-        PhonePriceDao phonePriceDao = new PhonePriceDao();
-
-        //6.Cập nhật  trạng thái  xử lí log_file là đang xử lý (isProcessing=true)
-        phonePriceDao.updateIsProcessing(con, logFile.getId(), true);
-
-        // 7. Cập nhật status log_file là EXTRACTING
-        phonePriceDao.updateStatus(con, logFile.getId(), "EXTRACTING");
-
-        // 8. Ghi Log đang tiến hành trich xuat du lieu
-        phonePriceDao.insertLog(con, logFile.getId(), "EXTRACTING", "Start EXTRACTING to Staging ");
-
-        // 9. Truncate table staging trong database staging
-        truncateTable(con, logFile);
-
-        String sqlLoadData = "LOAD DATA INFILE ? \n" +
-                "INTO TABLE staging.phone_price_dailys_origin\n" +
-                "FIELDS TERMINATED BY ',' \n" +
-                "ENCLOSED BY '\"'\n" +
-                "LINES TERMINATED BY '\\n'\n" +
-                "IGNORE 1 ROWS\n" +
-                "(NAME, price, processor, capacity, ram, screen_size, trademark, SOURCE, create_at);";
-        //11. Load Du Lieu Vao Staging
-        try{
-            PreparedStatement psLoadData = con.prepareStatement(sqlLoadData);
-            psLoadData.setString(1, logFile.getDetailFilePath());
-            psLoadData.execute();
-
-            System.out.println(" Da Vao Day");
-
-            //12.
-            phonePriceDao.updateStatus(con, logFile.getId(), "EXTRACTED");
-
-            // 13. Ghi Log đang trich xuat du lieu thanh cong
-            phonePriceDao.insertLog(con, logFile.getId(), "EXTRACTED", "EXTRACT to Staging Success");
-
-            //14.Cập nhật  trạng thái  xử lí log_file là đang xử lý (isProcessing=false)
-            phonePriceDao.updateIsProcessing(con, logFile.getId(), false);
-
-
-        }catch (SQLException e){
-            // 11.1 Xét trạng thái log_file: FAILED
-            phonePriceDao.updateStatus(con, logFile.getId(), "FAILED");
-            // 11.2 Ghi Log: CRAWL dữ liệu thất bại
-            phonePriceDao.insertLog(con, logFile.getId(), "FAILED", "EXTRACT Data FAILED WITH MESSAGE "+ e.getMessage());
-            // 11.3.Cập nhật  trạng thái  xử lí log_file là đang xử lý (isProcessing=false)
-            phonePriceDao.updateIsProcessing(con, logFile.getId(), false);
-
-            String mail = logFile.getConfigFile().getEmail();
-            DateTimeFormatter dt = DateTimeFormatter.ofPattern("hh:mm:ss dd/MM/yyyy");
-            LocalDateTime nowTime = LocalDateTime.now();
-            String timeNow = nowTime.format(dt);
-            String subject = "Error Date: " + timeNow;
-            String message = "Error with message: "+e.getMessage();
-            // 11.4 Gửi Mail đến Author
-            SendMail.sendMail(mail, subject, message);
         }
     }
 
